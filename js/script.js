@@ -3,7 +3,9 @@ import { OrbitControls } from "./OrbitControls.js"
 import Stats from "./stats.module.js"
 import * as BOIDS from "./boids.js"
 
-const GRID_COUNT = 40
+const GRID_COUNT_ROW = 60
+const GRID_COUNT_COL = 30
+
 const MAX_HEIGHT = 20
 
 const BOID_COUNT = 20
@@ -25,11 +27,11 @@ let boids = []
 function generate_terrain() {
   noise.seed(Math.random())
 
-  for (var i=0; i<GRID_COUNT; i++ ){
+  for (var i=0; i<GRID_COUNT_ROW; i++ ){
     let row = []
-    for (var j=0; j<GRID_COUNT; j++ ){
+    for (var j=0; j<GRID_COUNT_COL; j++ ){
       // Added one becuase it return from -1 to 1
-      let magnitude = (noise.perlin2(i/(0.2 * GRID_COUNT), j/(0.2 * GRID_COUNT)) + 1)/2 * MAX_HEIGHT
+      let magnitude = (noise.perlin2(i/(0.2 * GRID_COUNT_ROW), j/(0.2 * GRID_COUNT_COL)) + 1)/2 * MAX_HEIGHT
 
       // var geom = new THREE.CubeGeometry(0.8, 0.8, magnitude)
       var geom = new THREE.CylinderGeometry(0.5, 0.5, magnitude, 6)
@@ -58,12 +60,14 @@ function init_boids() {
   for (var i=0;i<BOID_COUNT;i++) {
     let mesh = new THREE.Mesh(geom, mat)
     mesh.position.set(Math.random() * 50, Math.random() * 50, MAX_HEIGHT+10)
+
     mesh.velocity = new THREE.Vector3()
     mesh.velocity.x = Math.random() * velocity - velocity/2
     mesh.velocity.y = Math.random() * velocity - velocity/2
 
+    mesh.layers.enable(1)
+    // mesh.layers.enable(2)
 
-    mesh.layers.set(1)
 
     scene.add(mesh)
     boids.push(mesh)
@@ -71,33 +75,40 @@ function init_boids() {
 }
 
 function drawBox() {
-  const geom = new THREE.CylinderGeometry(0.1, 0.1, 40, 10)
   const mat = new THREE.MeshBasicMaterial({color: 0x00ffff})
 
-  const left = new THREE.Mesh(geom, mat)
-  left.position.y = 20
+  const geom_vert = new THREE.CylinderGeometry(0.1, 0.1, GRID_COUNT_COL, 10)
+  const geom_hori = new THREE.CylinderGeometry(0.1, 0.1, GRID_COUNT_ROW, 10)
+
+
+  const left = new THREE.Mesh(geom_vert, mat)
+  left.position.y = GRID_COUNT_COL/2
   left.layers.enable(1)
   left.layers.enable(2)
 
-  const right = new THREE.Mesh(geom, mat)
-  right.position.y = 20
-  right.position.x = 40
+  const right = new THREE.Mesh(geom_vert, mat)
+  right.position.x = GRID_COUNT_ROW
+  right.position.y = GRID_COUNT_COL/2
   right.layers.enable(1)
   right.layers.enable(2)
 
-  // const left = new THREE.Mesh(geom, mat)
-  // left.position.y = 20
-  // left.layers.enable(1)
-  // left.layers.enable(2)
-  //
-  // const left = new THREE.Mesh(geom, mat)
-  // left.position.y = 20
-  // left.layers.enable(1)
-  // left.layers.enable(2)
+  const up = new THREE.Mesh(geom_hori, mat)
+  up.position.x = GRID_COUNT_ROW/2
+  up.rotation.z = Math.PI/2
+  up.layers.enable(1)
+  up.layers.enable(2)
 
+  const down = new THREE.Mesh(geom_hori, mat)
+  down.position.x = GRID_COUNT_ROW/2
+  down.position.y = GRID_COUNT_COL
+  down.rotation.z = Math.PI/2
+  down.layers.enable(1)
+  down.layers.enable(2)
 
   scene.add(left)
   scene.add(right)
+  scene.add(up)
+  scene.add(down)
 }
 
 function init() {
@@ -111,14 +122,13 @@ function init() {
   const container = document.getElementById('container')
   container.appendChild(renderer.domElement)
 
-  camera_top = new THREE.OrthographicCamera(-width/2, width/2, -height/2, height/2, 1, 100)
-  camera_top.position.x = GRID_COUNT/2
-  camera_top.position.y = GRID_COUNT/2
+  camera_top = new THREE.OrthographicCamera(-width/2, width/2, -height/2, height/2, 1, 200)
+  camera_top.position.x = GRID_COUNT_ROW/2
+  camera_top.position.y = GRID_COUNT_COL/2
   camera_top.position.z = -80
 
   camera_top.rotation.z = Math.PI
   camera_top.rotation.y = Math.PI
-  // camera_top.lookAt(GRID_COUNT/2, GRID_COUNT/2, 0)
   camera_top.zoom = 12
   camera_top.updateProjectionMatrix()
   camera_top.layers.set(1)
@@ -129,12 +139,12 @@ function init() {
   camera_right.layers.set(2)
 
   const controls = new OrbitControls(camera_right, renderer.domElement)
-  controls.target = new THREE.Vector3(GRID_COUNT/2, GRID_COUNT/2, 0)
+  controls.target = new THREE.Vector3(GRID_COUNT_ROW/2, GRID_COUNT_COL/2, 0)
   controls.update()
 
-  const helper = new THREE.AxesHelper(40);
-  scene.add(helper)
-  helper.layers.enable(2)
+  // const helper = new THREE.AxesHelper(40);
+  // scene.add(helper)
+  // helper.layers.enable(2)
   // helper.layers.enable(1)
 
   stats = new Stats()
@@ -149,8 +159,8 @@ function timeStep() {
   requestAnimationFrame(timeStep)
   stats.update()
 
-  // const x = Math.floor(Math.random() * GRID_COUNT)
-  // const y = Math.floor(Math.random() * GRID_COUNT)
+  // const x = Math.floor(Math.random() * GRID_COUNT_ROW)
+  // const y = Math.floor(Math.random() * GRID_COUNT_COL)
 
 
   // grid[x][y].material.color.setHex(0x00ff00)
@@ -197,13 +207,14 @@ function moveBoids() {
     BOIDS.limitSpeed(boid, boids)
     BOIDS.keepWithinBounds(boid, boids)
 
+
     boid.position.add(boid.velocity)
 
 
     const x = Math.floor(boid.position.x)
     const y = Math.floor(boid.position.y)
 
-    if (x < 0 || x >= GRID_COUNT || y < 0 || y >= GRID_COUNT) {
+    if (x < 0 || x >= GRID_COUNT_ROW || y < 0 || y >= GRID_COUNT_COL) {
       continue
     }
 

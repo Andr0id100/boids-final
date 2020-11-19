@@ -1,8 +1,7 @@
 import * as THREE from "./three.module.js"
 
 const visualRange = 5
-export const velocity = 0.25
-
+export const velocity = 0.3
 
 export function distance(boid1, boid2) {
   var temp = boid1.position.clone()
@@ -19,19 +18,20 @@ export function nClosestBoids(boid, boids, n) {
 }
 
 export function keepWithinBounds(boid, boids) {
-  const margin = 10
+  const margin_x = 10
+  const margin_y = 5
   const turnFactor = 1
 
-  if (boid.position.x < 0 - margin) {
+  if (boid.position.x < 0 - margin_x) {
     boid.velocity.x += turnFactor
   }
-  if (boid.position.x > 40 + margin) {
+  if (boid.position.x > 60 + margin_x) {
     boid.velocity.x -= turnFactor
   }
-  if (boid.position.y < 0 - margin) {
+  if (boid.position.y < 0 - margin_y) {
     boid.velocity.y += turnFactor
   }
-  if (boid.position.y > 40 + margin) {
+  if (boid.position.y > 30 + margin_y) {
     boid.velocity.y -= turnFactor
   }
 }
