@@ -1,8 +1,10 @@
+import * as THREE from "./three.module.js"
 
-const BOID_COUNT = 100;
-const visualRange = 80
+const visualRange = 5
+export const velocity = 0.25
 
-function distance(boid1, boid2) {
+
+export function distance(boid1, boid2) {
   var temp = boid1.position.clone()
   temp.sub(boid2.position)
   var dist = temp.length()
@@ -10,31 +12,31 @@ function distance(boid1, boid2) {
   return dist
 }
 
-function nClosestBoids(boid, n) {
+export function nClosestBoids(boid, boids, n) {
   const sorted = boids.slice()
   sorted.sort((a, b) => distance(boid, a) - distance(boid, b))
   return sorted.slice(1, n+1);
 }
 
-function keepWithinBounds(boid) {
-  const margin = 50
+export function keepWithinBounds(boid, boids) {
+  const margin = 10
   const turnFactor = 1
 
-  if (boid.position.x < -window.innerWidth/2 + margin) {
+  if (boid.position.x < 0 - margin) {
     boid.velocity.x += turnFactor
   }
-  if (boid.position.x > window.innerWidth/2 - margin) {
+  if (boid.position.x > 40 + margin) {
     boid.velocity.x -= turnFactor
   }
-  if (boid.position.y < -window.innerHeight/2 + margin) {
+  if (boid.position.y < 0 - margin) {
     boid.velocity.y += turnFactor
   }
-  if (boid.position.y > window.innerHeight/2 - margin) {
+  if (boid.position.y > 40 + margin) {
     boid.velocity.y -= turnFactor
   }
 }
 
-function flyTowardsCenter(boid) {
+export function flyTowardsCenter(boid, boids) {
   const centeringFactor = 0.005
 
   let center = new THREE.Vector3()
@@ -58,8 +60,8 @@ function flyTowardsCenter(boid) {
   }
 }
 
-function avoidOthers(boid) {
-  const minDistance = 25
+export function avoidOthers(boid, boids) {
+  const minDistance = 2
   const avoidFactor = 0.05
 
   let move = new THREE.Vector3()
@@ -79,7 +81,7 @@ function avoidOthers(boid) {
   boid.velocity.add(move)
 }
 
-function matchVelocity(boid) {
+export function matchVelocity(boid, boids) {
   const matchingFactor = 0.05
 
   let avg = new THREE.Vector3()
@@ -101,7 +103,7 @@ function matchVelocity(boid) {
   }
 }
 
-function limitSpeed(boid) {
+export function limitSpeed(boid, boids) {
   const speedLimit = velocity/1.5;
 
   const speed = boid.velocity.length()

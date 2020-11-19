@@ -1,12 +1,13 @@
 import * as THREE from "./three.module.js"
 import { OrbitControls } from "./OrbitControls.js"
 import Stats from "./stats.module.js"
-import "./boids.js"
+import * as BOIDS from "./boids.js"
 
 const GRID_COUNT = 40
 const MAX_HEIGHT = 20
 
-const BOID_COUNT = 9
+const BOID_COUNT = 20
+const velocity = BOIDS.velocity
 
 let scene
 
@@ -51,12 +52,17 @@ function generate_terrain() {
 }
 
 function init_boids() {
-  let geom = new THREE.SphereGeometry(0.8, 8, 8)
-  let mat = new THREE.MeshBasicMaterial({color: 0xffffff})
+  let geom = new THREE.SphereGeometry(0.2, 8, 8)
+  let mat = new THREE.MeshBasicMaterial({color: 0xf542da})
 
   for (var i=0;i<BOID_COUNT;i++) {
     let mesh = new THREE.Mesh(geom, mat)
-    mesh.position.set(Math.random() * 20, Math.random() * 20, 0)
+    mesh.position.set(Math.random() * 50, Math.random() * 50, 0)
+    mesh.velocity = new THREE.Vector3()
+    mesh.velocity.x = Math.random() * velocity - velocity/2
+    mesh.velocity.y = Math.random() * velocity - velocity/2
+
+
     mesh.layers.set(1)
 
     scene.add(mesh)
@@ -76,9 +82,14 @@ function init() {
   container.appendChild(renderer.domElement)
 
   camera_top = new THREE.OrthographicCamera(-width/2, width/2, -height/2, height/2, 1, 100)
-  camera_top.position.z = 80
-  camera_top.lookAt(GRID_COUNT/2, GRID_COUNT/2, 0)
-  camera_top.zoom = 10
+  camera_top.position.x = GRID_COUNT/2
+  camera_top.position.y = GRID_COUNT/2
+  camera_top.position.z = -80
+
+  camera_top.rotation.z = Math.PI
+  camera_top.rotation.y = Math.PI
+  // camera_top.lookAt(GRID_COUNT/2, GRID_COUNT/2, 0)
+  camera_top.zoom = 12
   camera_top.updateProjectionMatrix()
   camera_top.layers.set(1)
 
@@ -91,9 +102,10 @@ function init() {
   controls.target = new THREE.Vector3(GRID_COUNT/2, GRID_COUNT/2, 0)
   controls.update()
 
-  // const helper = new THREE.AxesHelper(20);
+  // const helper = new THREE.AxesHelper(40);
   // scene.add(helper)
-  // helper.layers.set(1)
+  // helper.layers.enable(2)
+  // helper.layers.enable(1)
 
   stats = new Stats()
   container.appendChild(stats.dom)
@@ -102,16 +114,18 @@ function init() {
   init_boids()
 }
 
-
 function timeStep() {
   requestAnimationFrame(timeStep)
   stats.update()
 
-  const x = Math.floor(Math.random() * GRID_COUNT)
-  const y = Math.floor(Math.random() * GRID_COUNT)
-  // grid[x][y].material.color.setHex(0x00ff00)
-  grid[x][y].layers.set(2)
+  // const x = Math.floor(Math.random() * GRID_COUNT)
+  // const y = Math.floor(Math.random() * GRID_COUNT)
 
+
+  // grid[x][y].material.color.setHex(0x00ff00)
+  // grid[x][y].layers.set(2)
+
+  moveBoids()
   render()
 }
 
@@ -142,6 +156,29 @@ function render_top() {
   renderer.setScissorTest(true)
 
   renderer.render(scene, camera_top)
+}
+
+function moveBoids() {
+  for (let boid of boids) {
+    BOIDS.flyTowardsCenter(boid, boids)
+    BOIDS.avoidOthers(boid, boids)
+    BOIDS.matchVelocity(boid, boids)
+    BOIDS.limitSpeed(boid, boids)
+    BOIDS.keepWithinBounds(boid, boids)
+
+    boid.position.add(boid.velocity)
+
+
+    const x = Math.floor(boid.position.x)
+    const y = Math.floor(boid.position.y)
+
+    if (x < 0 || x >= GRID_COUNT || y < 0 || y >= GRID_COUNT) {
+      continue
+    }
+
+    grid[x][y].layers.set(2)
+
+  }
 }
 
 init()
