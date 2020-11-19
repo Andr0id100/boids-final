@@ -57,7 +57,7 @@ function init_boids() {
 
   for (var i=0;i<BOID_COUNT;i++) {
     let mesh = new THREE.Mesh(geom, mat)
-    mesh.position.set(Math.random() * 50, Math.random() * 50, 0)
+    mesh.position.set(Math.random() * 50, Math.random() * 50, MAX_HEIGHT+10)
     mesh.velocity = new THREE.Vector3()
     mesh.velocity.x = Math.random() * velocity - velocity/2
     mesh.velocity.y = Math.random() * velocity - velocity/2
@@ -68,6 +68,36 @@ function init_boids() {
     scene.add(mesh)
     boids.push(mesh)
   }
+}
+
+function drawBox() {
+  const geom = new THREE.CylinderGeometry(0.1, 0.1, 40, 10)
+  const mat = new THREE.MeshBasicMaterial({color: 0x00ffff})
+
+  const left = new THREE.Mesh(geom, mat)
+  left.position.y = 20
+  left.layers.enable(1)
+  left.layers.enable(2)
+
+  const right = new THREE.Mesh(geom, mat)
+  right.position.y = 20
+  right.position.x = 40
+  right.layers.enable(1)
+  right.layers.enable(2)
+
+  // const left = new THREE.Mesh(geom, mat)
+  // left.position.y = 20
+  // left.layers.enable(1)
+  // left.layers.enable(2)
+  //
+  // const left = new THREE.Mesh(geom, mat)
+  // left.position.y = 20
+  // left.layers.enable(1)
+  // left.layers.enable(2)
+
+
+  scene.add(left)
+  scene.add(right)
 }
 
 function init() {
@@ -102,9 +132,9 @@ function init() {
   controls.target = new THREE.Vector3(GRID_COUNT/2, GRID_COUNT/2, 0)
   controls.update()
 
-  // const helper = new THREE.AxesHelper(40);
-  // scene.add(helper)
-  // helper.layers.enable(2)
+  const helper = new THREE.AxesHelper(40);
+  scene.add(helper)
+  helper.layers.enable(2)
   // helper.layers.enable(1)
 
   stats = new Stats()
@@ -112,6 +142,7 @@ function init() {
 
   generate_terrain()
   init_boids()
+  drawBox()
 }
 
 function timeStep() {
