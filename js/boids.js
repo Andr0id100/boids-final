@@ -1,7 +1,7 @@
 import * as THREE from "./three.module.js"
 
 const visualRange = 5
-export const velocity = 0.3
+export const velocity = 0.4
 
 export function distance(boid1, boid2) {
   var temp = boid1.position.clone()
@@ -34,6 +34,14 @@ export function keepWithinBounds(boid, boids) {
   if (boid.position.y > 30 + margin_y) {
     boid.velocity.y -= turnFactor
   }
+
+  // 20 is the MAX_HEIGHT
+  if (boid.position.z < 20 + 5) {
+    boid.velocity.z += turnFactor
+  }
+  if (boid.position.z > 30 + 5) {
+    boid.velocity.z -= turnFactor
+  }
 }
 
 export function flyTowardsCenter(boid, boids) {
@@ -61,7 +69,7 @@ export function flyTowardsCenter(boid, boids) {
 }
 
 export function avoidOthers(boid, boids) {
-  const minDistance = 2
+  const minDistance = 4
   const avoidFactor = 0.05
 
   let move = new THREE.Vector3()
@@ -104,7 +112,7 @@ export function matchVelocity(boid, boids) {
 }
 
 export function limitSpeed(boid, boids) {
-  const speedLimit = velocity/1.5;
+  const speedLimit = velocity;
 
   const speed = boid.velocity.length()
 
