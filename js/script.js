@@ -31,6 +31,8 @@ let stats
 let grid = []
 let boids = []
 
+let running = true
+
 function generate_terrain() {
   noise.seed(Math.random())
 
@@ -198,10 +200,20 @@ function init() {
   generate_terrain()
   place_victims()
   init_boids()
+
+  document.body.onkeyup = function(e){
+    if(e.keyCode == 32){
+      console.log(THREE.Clock )
+        running = !running
+    }
+}
 }
 
 function timeStep() {
   requestAnimationFrame(timeStep)
+  if (!running) {
+    return
+  }
   moveBoids()
   stats.update()
   render()
