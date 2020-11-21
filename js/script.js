@@ -10,6 +10,7 @@ const MAX_HEIGHT = 20
 
 const BOID_COUNT = 20
 const velocity = BOIDS.velocity
+const visualRange = BOIDS.visualRange
 
 let scene
 
@@ -19,6 +20,7 @@ let width, height
 let tick_count = 0
 const TICK_LIMIT = 200
 let chosen_boid
+let visual_circle
 
 let camera_top
 let camera_right
@@ -38,18 +40,15 @@ function generate_terrain() {
       // Added one becuase it return from -1 to 1
       let magnitude = (noise.perlin2(i/(0.2 * GRID_COUNT_ROW), j/(0.2 * GRID_COUNT_ROW)) + 1)/2 * MAX_HEIGHT
 
-      // var geom = new THREE.CubeGeometry(0.8, 0.8, magnitude)
       var geom = new THREE.CylinderGeometry(0.5, 0.5, magnitude, 6)
       var mat = new THREE.MeshBasicMaterial({color: `rgb(${Math.floor(magnitude * 255 / MAX_HEIGHT )}, 0, 0)`})
       var mesh = new THREE.Mesh(geom, mat)
+      mesh.has_victim = false
 
       mesh.rotation.x = Math.PI/2
 
-      mesh.position.x = i
-      mesh.position.y = j
-      mesh.position.z = magnitude/2
+      mesh.position.set(i, j, magnitude/2)
       mesh.layers.set(3)
-
 
       scene.add(mesh)
       row.push(mesh)
@@ -89,18 +88,21 @@ function drawBox() {
   left.position.y = GRID_COUNT_COL/2
   left.layers.enable(1)
   left.layers.enable(2)
+  // left.layers.enable(3)
 
   const right = new THREE.Mesh(geom_vert, mat)
   right.position.x = GRID_COUNT_ROW
   right.position.y = GRID_COUNT_COL/2
   right.layers.enable(1)
   right.layers.enable(2)
+  // right.layers.enable(3)
 
   const up = new THREE.Mesh(geom_hori, mat)
   up.position.x = GRID_COUNT_ROW/2
   up.rotation.z = Math.PI/2
   up.layers.enable(1)
   up.layers.enable(2)
+  // up.layers.enable(3)
 
   const down = new THREE.Mesh(geom_hori, mat)
   down.position.x = GRID_COUNT_ROW/2
@@ -108,11 +110,37 @@ function drawBox() {
   down.rotation.z = Math.PI/2
   down.layers.enable(1)
   down.layers.enable(2)
+  // down.layers.enable(3)
 
   scene.add(left)
   scene.add(right)
   scene.add(up)
   scene.add(down)
+}
+
+function place_victims() {
+  let geom = new THREE.ConeGeometry(0.4, 0.8)
+  let mat = new THREE.MeshBasicMaterial({color: 0xff6600})
+  let victim_count = 2 + Math.random() * 4
+
+  for (var i=0;i<victim_count;i++) {
+    let x = Math.floor(Math.random() * GRID_COUNT_ROW)
+    let y = Math.floor(Math.random() * GRID_COUNT_COL)
+
+    let pillar = grid[x][y]
+    pillar.has_victim = true
+
+    let mesh = new THREE.Mesh(geom, mat)
+    mesh.position.copy(pillar.position)
+    mesh.position.z *= 2
+
+    mesh.rotation.x = Math.PI/2
+
+    mesh.layers.set(3)
+
+    scene.add(mesh)
+
+  }
 }
 
 function init() {
@@ -149,9 +177,14 @@ function init() {
   controls.update()
 
   camera_boid = new THREE.PerspectiveCamera(90, (width/2)/(height/2), 0.1, 50)
-  camera_boid.layers.enable(1)
-  camera_boid.layers.enable(2)
-  camera_boid.layers.enable(3)
+  camera_boid.layers.set(3)
+
+  visual_circle = new THREE.Mesh(
+    new THREE.RingGeometry(visualRange, visualRange+0.1, 32),
+    new THREE.MeshBasicMaterial({color: 0x0000ff})
+  )
+  visual_circle.layers.set(1)
+  scene.add(visual_circle)
 
   // const helper = new THREE.AxesHelper(40);
   // scene.add(helper)
@@ -161,25 +194,16 @@ function init() {
   stats = new Stats()
   container.appendChild(stats.dom)
 
-  generate_terrain()
-  init_boids()
   drawBox()
+  generate_terrain()
+  place_victims()
+  init_boids()
 }
 
 function timeStep() {
   requestAnimationFrame(timeStep)
-  stats.update()
-
-  // const x = Math.floor(Math.random() * GRID_COUNT_ROW)
-  // const y = Math.floor(Math.random() * GRID_COUNT_COL)
-
-
-  // grid[x][y].material.color.setHex(0x00ff00)
-  // grid[x][y].layers.set(2)
-  // vect.position.copy(boids[BOID_COUNT-1].position)
-
-
   moveBoids()
+  stats.update()
   render()
 }
 
@@ -215,23 +239,19 @@ function render_boid_cam() {
   if (tick_count > TICK_LIMIT) {
     tick_count = 0
     chosen_boid.material.color.setHex(0xf542da)
-
   }
 
   if (tick_count == 0) {
     chosen_boid = boids[Math.floor(Math.random()*BOID_COUNT)]
     chosen_boid.material.color.setHex(0x00ff00)
   }
-  var temp1 = chosen_boid.velocity.clone()
-  var temp2 = chosen_boid.position.clone()
+  var temp = chosen_boid.position.clone()
+  temp.z = 0
 
-  temp1.add(temp2)
-  temp2.z = 0
-  temp1.add(temp2)
-  temp1.divideScalar(2)
+  visual_circle.position.copy(chosen_boid.position)
 
   camera_boid.position.copy(chosen_boid.position)
-  camera_boid.lookAt(temp1)
+  camera_boid.lookAt(temp)
   camera_boid.up.set(0, 0, 1)
 
   renderer.setViewport(0, 0, Math.floor(width/2), Math.floor(height/2))
@@ -261,7 +281,18 @@ function moveBoids() {
     if (x < 0 || x >= GRID_COUNT_ROW || y < 0 || y >= GRID_COUNT_COL) {
       continue
     }
-    grid[x][y].layers.set(2)
+    grid[x][y].layers.enable(2)
+    if (grid[x][y].has_victim == true) {
+      const geom = new THREE.CylinderGeometry(0.1, 0.1, MAX_HEIGHT, 6)
+      const mat = new THREE.MeshBasicMaterial(0xffffff)
+
+      let mesh = new THREE.Mesh(geom, mat)
+      mesh.position.set(x, y, MAX_HEIGHT/2)
+      mesh.rotation.x = Math.PI/2
+      mesh.layers.set(2)
+      mesh.layers.enable(3)
+      scene.add(mesh)
+    }
   }
 }
 

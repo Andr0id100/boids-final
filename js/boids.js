@@ -1,7 +1,7 @@
 import * as THREE from "./three.module.js"
 
-const visualRange = 5
-export const velocity = 0.4
+export const visualRange = 5
+export const velocity = 0.2
 
 export function distance(boid1, boid2) {
   var temp = boid1.position.clone()
