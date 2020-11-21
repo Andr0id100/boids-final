@@ -33,6 +33,106 @@ let boids = []
 
 let running = true
 
+// `rgb(0, 0, ${Math.floor(z * 255 / MAX_HEIGHT )})`
+function get_color(magnitude) {
+  return `rgb(${Math.floor(magnitude * 255 / MAX_HEIGHT )}, 0, 0)`
+}
+
+function generate_sides() {
+  let pillar, x, y, z
+  for (var i=0;i<GRID_COUNT_ROW;i++) {
+    // Up side
+    pillar = grid[i][GRID_COUNT_COL-1]
+    x = pillar.position.x
+    y = pillar.position.y + 1
+    z = pillar.position.z * 2
+
+    z -= 0.8
+    while (z > 0) {
+      let geom = new THREE.CylinderGeometry(0.5, 0.5, z, 6)
+      let mat = new THREE.MeshBasicMaterial({color: get_color(z)})
+
+      let mesh = new THREE.Mesh(geom, mat)
+      mesh.rotation.x = Math.PI/2
+      mesh.position.set(x, y++, z/2)
+      mesh.layers.set(3)
+      // mesh.layers.enable(2)
+      scene.add(mesh)
+
+      z -= 0.8
+    }
+    // Down side
+    pillar = grid[i][0]
+    x = pillar.position.x
+    y = pillar.position.y - 1
+    z = pillar.position.z * 2
+
+    z -= 0.8
+    while (z > 0) {
+       let geom = new THREE.CylinderGeometry(0.5, 0.5, z, 6)
+       let mat = new THREE.MeshBasicMaterial({color: get_color(z)})
+
+       let mesh = new THREE.Mesh(geom, mat)
+       mesh.rotation.x = Math.PI/2
+       mesh.position.set(x, y--, z/2)
+       mesh.layers.set(3)
+       // mesh.layers.enable(2)
+       scene.add(mesh)
+
+       z -= 0.8
+     }
+  }
+
+  for (var i=0;i<GRID_COUNT_COL;i++) {
+    // Left side
+    pillar = grid[GRID_COUNT_ROW-1][i]
+    x = pillar.position.x + 1
+    y = pillar.position.y
+    z = pillar.position.z * 2
+
+    z -= 0.8
+    while (z > 0) {
+       let geom = new THREE.CylinderGeometry(0.5, 0.5, z, 6)
+       let mat = new THREE.MeshBasicMaterial({color: get_color(z)})
+
+       let mesh = new THREE.Mesh(geom, mat)
+       mesh.rotation.x = Math.PI/2
+       mesh.position.set(x++, y, z/2)
+       mesh.layers.set(3)
+       // mesh.layers.enable(2)
+       scene.add(mesh)
+
+       z -= 0.8
+     }
+
+     pillar = grid[0][i]
+     x = pillar.position.x - 1
+     y = pillar.position.y
+     z = pillar.position.z * 2
+
+     z -= 0.8
+     while (z > 0) {
+       let geom = new THREE.CylinderGeometry(0.5, 0.5, z, 6)
+       let mat = new THREE.MeshBasicMaterial({color: get_color(z)})
+
+       let mesh = new THREE.Mesh(geom, mat)
+       mesh.rotation.x = Math.PI/2
+       mesh.position.set(x--, y, z/2)
+       mesh.layers.set(3)
+       // mesh.layers.enable(2)
+       scene.add(mesh)
+
+       z -= 0.8
+     }
+  }
+
+  // Up side
+
+  // Down side
+  //
+
+}
+
 function generate_terrain() {
   noise.seed(Math.random())
 
@@ -43,7 +143,7 @@ function generate_terrain() {
       let magnitude = (noise.perlin2(i/(0.2 * GRID_COUNT_ROW), j/(0.2 * GRID_COUNT_ROW)) + 1)/2 * MAX_HEIGHT
 
       var geom = new THREE.CylinderGeometry(0.5, 0.5, magnitude, 6)
-      var mat = new THREE.MeshBasicMaterial({color: `rgb(${Math.floor(magnitude * 255 / MAX_HEIGHT )}, 0, 0)`})
+      var mat = new THREE.MeshBasicMaterial({color: get_color(magnitude)})
       var mesh = new THREE.Mesh(geom, mat)
       mesh.has_victim = false
 
@@ -57,6 +157,7 @@ function generate_terrain() {
     }
     grid.push(row)
   }
+  generate_sides()
 }
 
 function init_boids() {
@@ -169,7 +270,7 @@ function init() {
   camera_top.updateProjectionMatrix()
   camera_top.layers.set(1)
 
-  camera_right = new THREE.PerspectiveCamera(50, width/height, 0.1, 200)
+  camera_right = new THREE.PerspectiveCamera(50, (width/2)/height, 0.1, 150)
 
   camera_right.position.set(10, -20, 90)
   camera_right.layers.set(2)
@@ -178,7 +279,7 @@ function init() {
   controls.target = new THREE.Vector3(GRID_COUNT_ROW/2, GRID_COUNT_COL/2, 0)
   controls.update()
 
-  camera_boid = new THREE.PerspectiveCamera(90, (width/2)/(height/2), 0.1, 50)
+  camera_boid = new THREE.PerspectiveCamera(90, (width/2)/(height/2), 0.1, 40)
   camera_boid.layers.set(3)
 
   visual_circle = new THREE.Mesh(
@@ -202,21 +303,25 @@ function init() {
   init_boids()
 
   document.body.onkeyup = function(e){
-    if(e.keyCode == 32){
-      console.log(THREE.Clock )
+    if (e.keyCode == 32) {
         running = !running
     }
-}
+    else if(e.keyCode == 67) {
+      tick_count = 0
+      chosen_boid.material.color.setHex(0xf542da)
+    }
+  }
+
 }
 
 function timeStep() {
   requestAnimationFrame(timeStep)
+  stats.update()
+  render()
   if (!running) {
     return
   }
   moveBoids()
-  stats.update()
-  render()
 }
 
 function render() {
