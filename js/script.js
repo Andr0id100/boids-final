@@ -157,7 +157,7 @@ function generate_terrain() {
     }
     grid.push(row)
   }
-  generate_sides()
+  // generate_sides()
 }
 
 function init_boids() {
